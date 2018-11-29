@@ -65,10 +65,8 @@ class Main2Activity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
         nav_view.setNavigationItemSelectedListener(this)
         spinner!!.setOnItemSelectedListener(this)
-
-
         createDatabase()
-
+        toolbar.setNavigationIcon(null);
 
 
     }
@@ -100,6 +98,10 @@ class Main2Activity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
 
             if( database.taskDao().getAllTasks().size == 0 )
                 database.taskDao().insertAll(*populateData())
+
+            if(database.taskDao().getAllSettings().size==0)
+                database.taskDao().addSetting( tSettings(1,"",3))
+
 
              areas =  database.taskDao().getAllTasks().toMutableList()
             uiThread {
@@ -213,7 +215,12 @@ class Main2Activity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         when (item.itemId) {
-            R.id.action_settings -> return true
+            R.id.action_settings -> {Log.d("Settings","test")
+                val myIntent = Intent(this, Settings::class.java)
+                // myIntent.putExtra("key", value) //Optional parameters
+                startActivity(myIntent)
+
+            return true}
             else -> return super.onOptionsItemSelected(item)
         }
     }

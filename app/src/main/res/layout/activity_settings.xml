@@ -4,11 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context=".MainActivity"
-    tools:showIn="@layout/app_bar_main"
-    android:orientation="vertical">
-
+    android:orientation="vertical"
+    tools:context=".Settings">
     <ImageView
         android:id="@+id/imageView2"
         android:layout_width="match_parent"
@@ -19,12 +16,10 @@
         android:layout_marginTop="32dp"
         app:srcCompat="@drawable/helmet"
         android:adjustViewBounds="true"
-        android:maxWidth="200dp"
-        android:maxHeight="200dp"
+        android:maxWidth="50dp"
+        android:maxHeight="50dp"
         android:scaleType="fitCenter"
         />
-
-
     <ProgressBar
         android:id="@+id/mProgressBar"
         style="@android:style/Widget.ProgressBar.Horizontal"
@@ -32,31 +27,114 @@
         android:layout_height="16dp"
         android:layout_marginTop="32dp"
         android:max="100"
+        android:min="0"
         android:progress="0" />
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="10dp"
-        android:text="" />
 
-<!-- Mensaje Enviado -->
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Mensaje enviado" />
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:text="Nivel de Sensibilidad" />
+
+
+
+    <!--   Linear Acceleration -->
+    <SeekBar
+        android:id="@+id/seekBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="10"
+        android:min="1"
+        android:progress="3" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:text="Nivel Actual de Sensibilidad" />
+
+    <TextView
+        android:id="@+id/lblSensibility"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:text="3" />
+
+    <!--   Accelerometer -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:text="Acelerómetro" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Movimiento en X" />
+    <TextView
+        android:id="@+id/tvAccelerometerX"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="X" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Movimiento en Y" />
+    <TextView
+        android:id="@+id/tvAccelerometerY"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="X" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Movimiento en Z" />
+    <TextView
+        android:id="@+id/tvAccelerometerZ"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="X" />
+
+
+    <!-- Motion Counter -->
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Detecciones"
+        android:visibility="invisible"/>
+
     <TextView
         android:id="@+id/lblMessageSent"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="No" />
-    <TextView
-        android:layout_width="wrap_content"
+        android:text="Número de celular al cual enviar alerta" />
+    <EditText
+        android:id="@+id/txbPhoneNumber"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Se enviará mensaje al celular" />
-<TextView
-    android:id="@+id/txbPhoneNumber"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:text=""/>
+        android:inputType="phone"
+        android:text="4611989574"
+        android:hint="Phone to send Message"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="10dp" />
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Guardar"
+        android:onClick="onSave"/>
 
     <TextView
         android:layout_width="wrap_content"
@@ -186,8 +264,6 @@
         android:layout_height="wrap_content"
         android:visibility="invisible"
         android:text="X" />
-
-
 
 
 </LinearLayout>

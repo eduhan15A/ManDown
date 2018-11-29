@@ -11,3 +11,11 @@ data class TaskEntity (
         var cel:String = ""
 )
 
+@Entity(tableName = "tsettings")
+data class tSettings (
+        @PrimaryKey(autoGenerate = true)
+        var id:Int = 0,
+        var cel:String = "",
+        var sensibility:Int = 0
+)
+

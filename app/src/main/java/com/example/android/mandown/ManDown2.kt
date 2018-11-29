@@ -18,14 +18,15 @@ import android.view.MenuItem
 import android.widget.SeekBar
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.app_bar_main.*
-import kotlinx.android.synthetic.main.content_main.*
 import kotlin.math.sqrt
 import android.os.CountDownTimer
 import android.widget.Toast
 import android.content.pm.PackageManager
 import android.os.Vibrator
 import android.telephony.SmsManager
-import kotlinx.android.synthetic.main.content_man_down.*
+import kotlinx.android.synthetic.main.content_mandown2.*
+import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.uiThread
 
 
 class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, SensorEventListener, SeekBar.OnSeekBarChangeListener {
@@ -55,6 +56,7 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
     private val PERMISSION_REQUEST_CODE = 1
     var timeLeft = 30
     private lateinit var area : String
+    lateinit var oSettings: tSettings
 
     private fun sendSMS(phoneNumber: String, message: String) {
         val sms = SmsManager.getDefault()
@@ -76,13 +78,13 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
         toggle.syncState()
              area = intent.getStringExtra("area")
 
-        nav_view.setNavigationItemSelectedListener(this)
+       nav_view.setNavigationItemSelectedListener(this)
         mAccel = 0.00f;
         mAccelCurrent = SensorManager.GRAVITY_EARTH;
         mAccelLast = SensorManager.GRAVITY_EARTH;
         //Call the start sensor Method
-        lblSensibility.text = gravityDetectionLevel.toString()
-        seekBar!!.setOnSeekBarChangeListener(this)
+      //  lblSensibility.text = gravityDetectionLevel.toString()
+      //  seekBar!!.setOnSeekBarChangeListener(this)
         startingSensor()
              mProgressBar.setProgress(timeLeft)
              if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
@@ -99,7 +101,7 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
 
          objectTimer =    object : CountDownTimer(timer, 1000) {
             override fun onTick(millisUntilFinished: Long) {
-                lblCountDown.setText("seconds remaining: " + millisUntilFinished / 1000)
+              //  lblCountDown.setText("seconds remaining: " + millisUntilFinished / 1000)
                 timeLeft--
                 mProgressBar.setProgress(timeLeft * 100 / (30000 / 1000))
 
@@ -113,7 +115,7 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
 
             }
             override fun onFinish() {
-                lblCountDown.setText("done!")
+               // lblCountDown.setText("done!")
              //   val intent = Intent(applicationContext,MainActivity::class.java)
              //   val pi = PendingIntent.getActivity(applicationContext, 0, intent, 0)
             //    val sms = SmsManager.getDefault()
@@ -126,12 +128,13 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
                     sendSMS(txbPhoneNumber.text.toString(), "¡Ayuda! Hombre caído en: "+area);
 
 
-                    Toast.makeText(applicationContext, "Message Sent successfully!",
+                    Toast.makeText(applicationContext, "¡Mensaje de ayuda enviado!",
                             Toast.LENGTH_LONG).show()
 
-                    lblMessageSent.text = "Si"
+                  //  lblMessageSent.text = "Si"
                     Log.d("Message Sent","Message Sent")
                     messageSent = true
+                    lblMessageSent.text = "Si"
 
                 }
 
@@ -141,9 +144,26 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
 
 
 
-
+             toolbar.setNavigationIcon(null);
+             readFromDB()
     }
 
+    fun readFromDB(){
+        //  Main2Activity.database =  Room.databaseBuilder(this, TasksDatabase::class.java, "tasks-db").build()
+
+        doAsync {
+
+
+            if (Main2Activity.database.taskDao().getAllSettings().size != 0){
+               oSettings = Main2Activity.database.taskDao().getAllSettings().first()
+
+                uiThread {
+                    gravityDetectionLevel = oSettings.sensibility
+                    txbPhoneNumber.text = oSettings.cel.toString()
+                }
+            }
+        }
+    }
 
     //Starting the sensors
     fun startingSensor(){
@@ -178,7 +198,7 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
     override fun onSensorChanged(event: SensorEvent?) {
 
         when (event?.sensor?.type) {
-            Sensor.TYPE_LINEAR_ACCELERATION -> {
+         /*   Sensor.TYPE_LINEAR_ACCELERATION -> {
                 Log.d("MainActivity","Linear_acceleration")
                 valuesLinAcceleration[0] = event.values[0]
                 valuesLinAcceleration[1] = event.values[1]
@@ -198,7 +218,7 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
                 tvGravity.text = event.values[0].toString()
                 tvGravityY.text = event.values[1].toString()
                 tvGravityZ.text = event.values[2].toString()
-            }
+            }*/
 
             Sensor.TYPE_ACCELEROMETER -> {
                 val alpha = 0.8f
@@ -228,12 +248,16 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
                     // do something
                     Log.d("Accelerometer","Is in movement")
                    // tvAccelerometerMovement.text = "Mestoymoviendo"
-                    motionCounter ++
-                    lblMotionCounter.text = motionCounter.toString()
-                    isInMovement = true
-                    objectTimer.cancel()
-                    timeLeft=30
-                    objectTimer.start()
+                  //  lblMotionCounter.text = motionCounter.toString()
+
+                  if(!messageSent){
+
+                      isInMovement = true
+                      objectTimer.cancel()
+                      timeLeft=30
+                      objectTimer.start()
+
+                  }
 
                   //  val mp = MediaPlayer.create (this, R.raw.heylisten)
                   //  mp.start ()
@@ -245,7 +269,7 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
 
 
             }
-            Sensor.TYPE_GYROSCOPE -> {
+       /*     Sensor.TYPE_GYROSCOPE -> {
                 Log.d("MainActivity","Gyroscopio")
                 valuesGyroscope[0] = event.values[0]
                 valuesGyroscope[1] = event.values[1]
@@ -271,7 +295,7 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
                 stepCounter[0] = event.values[0]
 
                 tvStepCounter.text = event.values[0].toString()
-            }
+            }*/
         }
 
     }
@@ -279,12 +303,15 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
 
     override fun onDestroy () {
         super.onDestroy ()
+        sensorManager.unregisterListener(this)
+        objectTimer.cancel()
     }
 
     //Register and unregister eventos
 
     override fun onResume() {
         super.onResume();
+
         sensorManager.registerListener(this,
                 sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), 100);
 
@@ -311,7 +338,7 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
 
     override fun onPause() {
         super.onPause()
-        sensorManager.unregisterListener(this)
+      //  sensorManager.unregisterListener(this)
     }
 
 
@@ -327,8 +354,8 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
-        menuInflater.inflate(R.menu.main, menu)
-        return true
+       // menuInflater.inflate(R.menu.main, menu)
+        return false
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -373,7 +400,7 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
     override fun onProgressChanged(seekBar: SeekBar, progress: Int,
                                    fromUser: Boolean) {
         // called when progress is changed
-        lblSensibility.text = seekBar.progress.toString()
+       // lblSensibility.text = seekBar.progress.toString()
         gravityDetectionLevel = seekBar.progress
 
     }
@@ -389,8 +416,7 @@ class ManDown2 : AppCompatActivity(), NavigationView.OnNavigationItemSelectedLis
 
     override fun onStop() {
         super.onStop()
-        sensorManager.unregisterListener(this)
-        objectTimer.cancel()
+
     }
 
 
