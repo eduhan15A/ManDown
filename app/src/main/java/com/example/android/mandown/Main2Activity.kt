@@ -1,5 +1,6 @@
 package com.example.android.mandown
 
+import android.Manifest
 import android.arch.persistence.room.Room
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -17,18 +18,21 @@ import kotlinx.android.synthetic.main.activity_main2.*
 import kotlinx.android.synthetic.main.app_bar_main2.*
 import android.support.v4.content.ContextCompat.startActivity
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Build
 import android.support.annotation.RequiresApi
+import android.support.v4.app.ActivityCompat.requestPermissions
 import android.support.v4.view.accessibility.AccessibilityEventCompat.setAction
-import android.telephony.SmsMessage
+import android.telephony.SmsManager
 import android.util.Log
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import com.example.android.mandown.Main2Activity.Companion.database
 import com.example.android.mandown.R.id.*
 import kotlinx.android.synthetic.main.content_main2.*
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.uiThread
-
 
 class Main2Activity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener, AdapterView.OnItemSelectedListener {
     override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -37,11 +41,26 @@ class Main2Activity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
       }
 
+
     companion object {
+         lateinit var  inst: Main2Activity
+        fun instances(): Main2Activity {
+            return inst
+        }
+
         lateinit var database: TasksDatabase
     }
 
+
      lateinit var areas:  MutableList<TaskEntity>
+    private val PERMISSION_REQUEST_CODE = 1
+    lateinit var oSettings: tSettings
+
+    override fun onStart() {
+        super.onStart()
+        inst = this
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,9 +72,36 @@ class Main2Activity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
             //        .setAction("Action", null).show()
 
             //  Toast.makeText(this, "holi", Toast.LENGTH_SHORT).show()
-            val myIntent = Intent(this, ManDown2::class.java)
-             myIntent.putExtra("area", spinner!!.selectedItem.toString()) //Optional parameters
-            startActivity(myIntent)
+          //  val myIntent = Intent(this, ManDown2::class.java)
+          //   myIntent.putExtra("area", spinner!!.selectedItem.toString()) //Optional parameters
+           //startActivity(myIntent)
+
+
+                       // if(lblphone.text != ""){
+                          //  sendSMS(oSettings.cel,"Solicitando autorización para ingresar al area de: "+ spinner!!.selectedItem.toString())
+                          //  val sms = SmsManager.getDefault()
+
+            doAsync {
+
+                if (Main2Activity.database.taskDao().getAllSettings().size != 0) {
+                    oSettings = Main2Activity.database.taskDao().getAllSettings().first()
+                }
+
+                if(oSettings.cel != ""){
+                            var message: String = "Solicitando autorizacion para ingresar al area de: "+ spinner!!.selectedItem.toString()
+                            var oSms: SmsSender = SmsSender()
+                            oSms.sendSMS(oSettings.cel,message)
+
+                            Snackbar.make(view, "Se ha enviado mensaje solicitando autorización al número: " + oSettings.cel , Snackbar.LENGTH_LONG)
+                                   .setAction("Mensaje", null).show()
+
+                        }
+                        else{
+            Snackbar.make(view, "No se ha configurado ningún celular, configúralo en Settings", Snackbar.LENGTH_LONG)
+                    .setAction("Mensaje", null).show()
+        }
+
+            }
         }
 
         val toggle = ActionBarDrawerToggle(
@@ -67,8 +113,90 @@ class Main2Activity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
         spinner!!.setOnItemSelectedListener(this)
         createDatabase()
         toolbar.setNavigationIcon(null);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+
+            if (checkSelfPermission(Manifest.permission.SEND_SMS)
+                    == PackageManager.PERMISSION_DENIED) {
+
+                Log.d("permission", "permission denied to SEND_SMS - requesting it");
+                val permissions = arrayOf(Manifest.permission.SEND_SMS)
+                requestPermissions(permissions, PERMISSION_REQUEST_CODE)
+
+            }
+        }
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+
+            if (checkSelfPermission(Manifest.permission.RECEIVE_SMS)
+                    == PackageManager.PERMISSION_DENIED) {
+
+                Log.d("permission", "permission denied to SEND_SMS - requesting it");
+                val permissions = arrayOf(Manifest.permission.RECEIVE_SMS)
+                requestPermissions(permissions, PERMISSION_REQUEST_CODE)
+
+            }
+        }
 
 
+
+      /*  doAsync {
+            if (Main2Activity.database.taskDao().getAllSettings().size != 0){
+                oSettings = Main2Activity.database.taskDao().getAllSettings().first()
+
+                uiThread {
+                  lblphone.text = oSettings.cel
+                }
+            }
+        }
+        */
+        configureReceiver()
+    }
+
+    private fun configureReceiver() {
+        val filter = IntentFilter()
+        filter.addAction("android.provider.Telephony.SMS_RECIEVED")
+        val receiver = MyReceiver()
+        registerReceiver(receiver, filter)
+    }
+
+     fun goForward(cellphoneAux: String , messageAux: String){
+
+
+         doAsync {
+             if (Main2Activity.database.taskDao().getAllSettings().size != 0){
+                 oSettings = Main2Activity.database.taskDao().getAllSettings().first()
+
+                 uiThread {
+                    var celsender :String = oSettings.cel
+
+                     if(celsender == cellphoneAux){
+                         if(messageAux.contains("Ok")){
+
+                             Toast.makeText(applicationContext,"Se ha recibido la autorización por parte del número guardado en la aplicación, se puede iniciar la actividad",Toast.LENGTH_LONG).show()
+                             val myIntent = Intent(applicationContext, ManDown2::class.java)
+                             myIntent.putExtra("area", spinner!!.selectedItem.toString()) //Optional parameters
+                             startActivity(myIntent)
+                         }
+                         else{
+
+                             Toast.makeText(applicationContext,"Se esperaba un mensaje de confirmación con una respuesta que contuviera la palabra Ok",Toast.LENGTH_LONG).show()
+
+                         }
+
+
+
+                     }else{
+
+                         Toast.makeText(applicationContext,"Se recibió un mensaje por parte de otro celular diferente al guardado en la aplicación. Favor de enviarlo desde ese número o cambiar el numero en Settings" ,Toast.LENGTH_LONG).show()
+
+                     }
+
+                 }
+             }
+         }
+
+
+      //  Log.d("Tag","Going forward")
     }
 
 
@@ -128,8 +256,8 @@ class Main2Activity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 TaskEntity(6, "BO Cuarto de Utilities BO Sur", "1234"),
                 TaskEntity(7, "BO Mezzanine Norte (Bombas de resinas)", "1234"),
                 TaskEntity(8, "BO Mezzanine Sur (Bombas de resinas)", "1234"),
-                TaskEntity(9, "BO Subestaciòn Eléctrica BO 2", "1234"),
-                TaskEntity(10, "BO Subestación Eléctrica BO 1", "1234"),
+                TaskEntity(9, "BO Subestacion Electrica BO 2", "1234"),
+                TaskEntity(10, "BO Subestacion Electrica BO 1", "1234"),
                 TaskEntity(11, "BO Bodega de limpieza BO", "1234"),
                 TaskEntity(12, "BO Bodega de mantenimiento", "1234"),
                 TaskEntity(13, "BO Cuarto Generador de Vapor", "1234"),
@@ -140,7 +268,7 @@ class Main2Activity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 TaskEntity(18, "BO Cuarto de residuos orgánicos BO", "1234"),
                 TaskEntity(19, "BO Cuarto de IT BO", "1234"),
                 TaskEntity(20, "Exterior Planta de emergencia de BO", "1234"),
-                TaskEntity(21, "Exterior Camino periférico de planta", "1234"),
+                TaskEntity(21, "Exterior Camino periferico de planta", "1234"),
                 TaskEntity(22, "Exterior Parte superior Silos Sur", "1234"),
                 TaskEntity(23, "Exterior Parte superior Silos Norte", "1234"),
                 TaskEntity(24, "Exterior Torres de enfriamiento", "1234"),
@@ -153,34 +281,34 @@ class Main2Activity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
                 TaskEntity(31, "Exterior Cuarto de Bombas 2 FP", "1234"),
                 TaskEntity(32, "Exterior Canal Norte para agua pluvial", "1234"),
                 TaskEntity(33, "Exterior Canal Sur para agua pluvial", "1234"),
-                TaskEntity(34, "Exterior Tanque de Hidrógeno", "1234"),
-                TaskEntity(35, "Exterior Tanque de Nitrógeno", "1234"),
+                TaskEntity(34, "Exterior Tanque de Hidrogeno", "1234"),
+                TaskEntity(35, "Exterior Tanque de Nitrogeno", "1234"),
                 TaskEntity(36, "Exterior Cuarto de Residuos Peligrosos", "1234"),
                 TaskEntity(37, "Exterior Cuarto de Materiales Peligrosos", "1234"),
                 TaskEntity(38, "Exterior Cuarto de Obsoletos", "1234"),
-                TaskEntity(39, "Exterior Subestación Principal ", "1234"),
-                TaskEntity(40, "Exterior Estación de Gas LP ", "1234"),
+                TaskEntity(39, "Exterior Subestacion Principal ", "1234"),
+                TaskEntity(40, "Exterior Estacion de Gas LP ", "1234"),
                 TaskEntity(41, "Exterior Bomba 1 de descarga de Diesel", "1234"),
                 TaskEntity(42, "Exterior Bomba 2 de descarga de Diesel", "1234"),
-                TaskEntity(43, "Exterior Área de tanques pulmón BO-PC", "1234"),
+                TaskEntity(43, "Exterior Area de tanques pulmon BO-PC", "1234"),
                 TaskEntity(44, "Exterior Cuarto de lubricantes", "1234"),
                 TaskEntity(45, "Exterior Bodega de Control de plagas", "1234"),
-                TaskEntity(46, "Exterior Laguna de colección de agua pluvial", "1234"),
+                TaskEntity(46, "Exterior Laguna de coleccion de agua pluvial", "1234"),
                 TaskEntity(47, "Exterior Bodega de Jardineria", "1234"),
-                TaskEntity(48, "Exterior Subestación eléctrica de torres de enfriamiento", "1234"),
+                TaskEntity(48, "Exterior Subestacion electrica de torres de enfriamiento", "1234"),
                 TaskEntity(49, "Exterior Antena de TELCEL ", "1234"),
-                TaskEntity(50, "Exterior Sala de capacitación de contratistas", "1234"),
+                TaskEntity(50, "Exterior Sala de capacitacion de contratistas", "1234"),
                 TaskEntity(51, "Exterior Evaporadora", "1234"),
-                TaskEntity(52, "Exterior Área de residuos (exterior)", "1234"),
+                TaskEntity(52, "Exterior Area de residuos (exterior)", "1234"),
                 TaskEntity(53, "PC Bodega de Limpieza PC ", "1234"),
                 TaskEntity(54, "PC Cuarto de Utilities PC", "1234"),
                 TaskEntity(55, "PC Techumbre PC ", "1234"),
-                TaskEntity(56, "PC Cuarto de residuos orgánicos PC", "1234"),
+                TaskEntity(56, "PC Cuarto de residuos organicos PC", "1234"),
                 TaskEntity(57, "PC Cuarto de baterias ", "1234"),
                 TaskEntity(58, "PC Cuarto de IT PC ", "1234"),
                 TaskEntity(59, "PC Planta de emergencia de PC ", "1234"),
                 TaskEntity(60, "PC Laboratorio de Pack Dev ", "1234"),
-                TaskEntity(61, "PC Área de residuos (interior) ", "1234")
+                TaskEntity(61, "PC Area de residuos (interior) ", "1234")
 
 
 
@@ -195,13 +323,15 @@ class Main2Activity : AppCompatActivity(), NavigationView.OnNavigationItemSelect
     }
 
     fun onSendClick(view: View){
-
       //  Toast.makeText(this, "holi", Toast.LENGTH_SHORT).show()
-        val myIntent = Intent(this, ManDown::class.java)
+      //  val myIntent = Intent(this, ManDown::class.java)
        // myIntent.putExtra("key", value) //Optional parameters
-        startActivity(myIntent)
+       // startActivity(myIntent)
+
+
 
     }
+
 
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

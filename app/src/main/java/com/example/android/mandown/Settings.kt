@@ -17,6 +17,9 @@ import kotlinx.android.synthetic.main.activity_settings.*
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.uiThread
 import kotlin.math.sqrt
+import android.content.Intent
+
+
 
 class Settings : Activity(), SensorEventListener, SeekBar.OnSeekBarChangeListener {
     private lateinit var sensorManager: SensorManager
@@ -207,6 +210,14 @@ class Settings : Activity(), SensorEventListener, SeekBar.OnSeekBarChangeListene
                 }
             }
         }
+
+    fun goBack(view: View){
+        val returnIntent = Intent()
+        returnIntent.putExtra("result", "Hey, I received your intent!")
+        setResult(1, returnIntent)
+        finish() // this finish method has to be called in order for the MainActivity to receive the result
+
+    }
 
     fun Context.toast(message: CharSequence) =
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
